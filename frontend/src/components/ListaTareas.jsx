@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { BotonAction } from "./ui/BotonAction"
 import { Input } from "./ui/Input"
 
-export const ListaTareas=()=>{
+export const ListaTareas=({onSeleccionarTarea})=>{
     //lazzy initializer cuando iniciamos un estado en react generalmente lo ahcemos vacio [''] com oesto en exte caso no queremos que eso pase necesitamos que cargue la lsita de tareas que el cree por eso usaremos uan funcion anonima adentro apra que solo se ejecuter cuadn ocargue la pagina ya que esto quema buena memoria
     const [listaTareas,setlistaTareas]=useState(()=>{
         //1.buscamos la lista de tareas en el disco duro del navegador
@@ -64,6 +64,7 @@ export const ListaTareas=()=>{
             <p >{tarea.nombre}</p>
             <BotonAction variante="rojo" onClick={()=>eliminarTarea(tarea.id)}>eliminar tarea</BotonAction>
             <BotonAction variante={tarea.completada?'azul':'rojo'} onClick={()=>completarTarea(tarea.id)} >{tarea.completada?'concluida':'no concluida'}</BotonAction>
+            <BotonAction variante="verde" onClick={()=>onSeleccionarTarea(tarea)}>Enfocar</BotonAction>
             </div>
             
         ))}
