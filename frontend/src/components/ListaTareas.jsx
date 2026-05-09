@@ -2,75 +2,98 @@ import { useEffect, useState } from "react"
 import { BotonAction } from "./ui/BotonAction"
 import { Input } from "./ui/Input"
 
-export const ListaTareas=({onSeleccionarTarea})=>{
-    //lazzy initializer cuando iniciamos un estado en react generalmente lo ahcemos vacio [''] com oesto en exte caso no queremos que eso pase necesitamos que cargue la lsita de tareas que el cree por eso usaremos uan funcion anonima adentro apra que solo se ejecuter cuadn ocargue la pagina ya que esto quema buena memoria
-    const [listaTareas,setlistaTareas]=useState(()=>{
-        //1.buscamos la lista de tareas en el disco duro del navegador
-        const listaTareasGuardada= localStorage.getItem('lista_tareas')
-        //2. comprobacion si encontro algo (si no hay nada devuelve null)
-        if (listaTareasGuardada){
-            //3. si hay algo lo decodificaremos y lo convertiremos en el estado inicial usando parse
-            return JSON.parse(listaTareasGuardada);
-        }else {
-            //4. si es la primera vez que el usuario entra y no hay nada guardado devolvemos un valor por defecto
-            return []; 
+export const ListaTareas = ({ onSeleccionarTarea }) => {
+    // 1. Iniciamos el estado vacío. Ya no usamos Lazy Initializer con localStorage.
+    const [listaTareas, setlistaTareas] = useState([]);
+    const [texto, setTexto] = useState('');
+
+    // 2. EFECTO DE LECTURA (GET): Se ejecuta solo una vez al cargar la página
+    useEffect(() => {
+        const cargarTareas = async () => {
+            try {
+                // Hacemos la petición a tu servidor FastAPI
+                const respuesta = await fetch("http://localhost:8000/tasks/");
+                if (respuesta.ok) {
+                    const tareas_db = await respuesta.json();
+                    setlistaTareas(tareas_db); // Guardamos lo que viene de Postgres
+                }
+            } catch (error) {
+                console.error("Error al conectar con la base de datos:", error);
+            }
+        };
+
+        cargarTareas();
+    }, []); // El array vacío asegura que solo se ejecute al montar el componente
+
+    // 3. FUNCION DE CREACIÓN (POST)
+    const agregarTarea = async (texto_tarea) => {
+        if (!texto_tarea.trim()) return; // Evita enviar tareas vacías
+
+        try {
+            // Enviamos el JSON al backend
+            const respuesta = await fetch("http://localhost:8000/tasks/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ title: texto_tarea }) // Pydantic espera "title"
+            });
+
+            if (respuesta.ok) {
+                const nueva_tarea_db = await respuesta.json();
+                // Actualizamos la pantalla agregando la tarea que nos devolvió el backend (ya con su ID real)
+                setlistaTareas([...listaTareas, nueva_tarea_db]);
+                setTexto(''); // Limpiamos el input
+            }
+        } catch (error) {
+            console.error("Error al guardar la tarea:", error);
         }
-    })
-    const [texto,setTexto]=useState('')
-
-    useEffect(()=>{
-        //localstorage funcion apra guiardar texto nos sirve para uqe guarde las ejemplo lso datos de incio etc.. en este caso a ejempl ode uso solo guardare la lsita de tarea
-
-        localStorage.setItem('lista_tareas',JSON.stringify(listaTareas));
-    },[listaTareas])
-
-    const agregarTarea = (nombre_tarea,) => {
-
-    const nueva_tarea={
-        id:Date.now(),
-        nombre:nombre_tarea,
-        completada:false,  
     }
-    //los ... ses el operador spread esto ahce es recuerda lo qeu teniamos antes y merte esto nuevo
-    setlistaTareas([...listaTareas,nueva_tarea])
+
+    // Funciones locales (Pendientes de conectar al backend en el futuro)
+    const eliminarTarea = (id) => {
+        const nuevaLista = listaTareas.filter((tarea) => tarea.id !== id)
+        setlistaTareas(nuevaLista)
     }
-    const eliminarTarea= (id)=> {
-        const nuevaLista=listaTareas.filter((tarea)=>tarea.id!==id)
-        //el filter busca dentro de mi lista las que cumplan esa ocndicin y las agrega ala nueva lista
-        setlistaTareas(nuevaLista) //aca simplemente agregamos la lista ya filtrada
-    }
-    const completarTarea=(id)=>{
-        const a_completar=listaTareas.map((tarea)=>{
-            if(tarea.id===id){
-                return {...tarea,completada:!tarea.completada}
-            }else{
+
+    const completarTarea = (id) => {
+        const a_completar = listaTareas.map((tarea) => {
+            if (tarea.id === id) {
+                return { ...tarea, completed: !tarea.completed }
+            } else {
                 return tarea
             }
         })
         setlistaTareas(a_completar)
     }
 
-    return(
+    return (
         <>
-        <Input valor={texto} textoFondo={'escribe nombre de la tarea'} alEscribir={(evento)=>{
-            //aca recibimos el evento el bus cara el evento de tipo teclado
-            setTexto(evento.target.value)
-        }}/>
-        <BotonAction onClick={()=>{
-        agregarTarea(texto);
-        setTexto('')}}>click para agregar tarea</BotonAction>
-        {listaTareas.map((tarea)=>(
-            <div key={tarea.id} className="flex justify-between items-center bg-teal-300 p-2 rounded">
-            <p >{tarea.nombre}</p>
-            <BotonAction variante="rojo" onClick={()=>eliminarTarea(tarea.id)}>eliminar tarea</BotonAction>
-            <BotonAction variante={tarea.completada?'azul':'rojo'} onClick={()=>completarTarea(tarea.id)} >{tarea.completada?'concluida':'no concluida'}</BotonAction>
-            <BotonAction variante="verde" onClick={()=>onSeleccionarTarea(tarea)}>Enfocar</BotonAction>
-            </div>
+            <Input 
+                valor={texto} 
+                textoFondo={'escribe nombre de la tarea'} 
+                alEscribir={(evento) => {
+                    setTexto(evento.target.value)
+                }} 
+            />
+            <BotonAction onClick={() => agregarTarea(texto)}>
+                click para agregar tarea
+            </BotonAction>
             
-        ))}
-        
+            {listaTareas.map((tarea) => (
+                <div key={tarea.id} className="flex justify-between items-center bg-teal-300 p-2 rounded mt-2">
+                    {/* Renderizamos usando 'title' como viene de Postgres */}
+                    <p>{tarea.title}</p>
+                    <BotonAction variante="rojo" onClick={() => eliminarTarea(tarea.id)}>eliminar tarea</BotonAction>
+                    
+                    {/* Renderizamos usando 'completed' */}
+                    <BotonAction variante={tarea.completed ? 'azul' : 'rojo'} onClick={() => completarTarea(tarea.id)}>
+                        {tarea.completed ? 'concluida' : 'no concluida'}
+                    </BotonAction>
+                    
+                    <BotonAction variante="verde" onClick={() => onSeleccionarTarea(tarea)}>Enfocar</BotonAction>
+                </div>
+            ))}
         </>
-        
     )
-
 }

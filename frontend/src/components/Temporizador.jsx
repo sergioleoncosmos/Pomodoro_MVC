@@ -82,7 +82,7 @@ export const Temporizador=({tarea})=>{
     return(
         //flexbox para centrar todo en una columna 
         <div className="flex flex-col items-center gap-6 mt-10">
-            {tarea ? <h3>Trabajando en: {tarea.nombre}</h3> : <h3>Selecciona una tarea para comenzar</h3>}
+            {tarea ? <h3>Trabajando en: {tarea.title}</h3> : <h3>Selecciona una tarea para comenzar</h3>}
             <h2>{modo==='Enfoque'?'TIEMPO DE ENFOQUE':'TIEMPO DE DESCANSO'}</h2>
             <h1 className="text-4xl font-bold text-lime-400">{horas_formateadas}:{minutos_formateados}.{segundos_formateados}</h1>
             
