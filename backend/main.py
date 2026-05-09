@@ -1,14 +1,18 @@
-from fastapi import FastAPI,Request
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from database import engine
+from models import task
+from routers import tasks
 
-#inicializamos la app
-app =FastAPI(title="Pomodoro Pro")
+app = FastAPI()
 
-#configuracion de las vistas
-templates = Jinja2Templates(directory="templates")
+task.Base.metadata.create_all(bind=engine)
 
-#controlador pagina inicio 
-@app.get('/')
-async def home(request:Request):
-    #cuando alguien entre a la raiz osea el inicio mostraremos el index.html
-    return templates.TemplateResponse("index.html",{"request":request})
+app.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["Tareas"]
+)
+
+@app.get("/")
+def health_check():
+    return {"proyecto": "Pomodoro Pro", "estado": "activo y listo para darlo todo"}

@@ -1,6 +1,1 @@
-__pycache__/
-*.py[cod]
-*$py.class
 .env
-.vscode/
-.DS_Store
